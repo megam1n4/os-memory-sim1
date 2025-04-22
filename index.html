@@ -330,6 +330,54 @@
         margin-top: 2px;
         text-shadow: none;
       }
+      /* Error Modal Styles */
+      #errorModal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.32);
+        justify-content: center;
+        align-items: center;
+      }
+      #errorModal[open],
+      #errorModal.show {
+        display: flex;
+      }
+      #errorModalContent {
+        background: #fff;
+        color: #e53935;
+        border-radius: 12px;
+        box-shadow: 0 4px 32px #0005;
+        padding: 32px 36px 24px 36px;
+        min-width: 320px;
+        max-width: 90vw;
+        text-align: center;
+        font-size: 1.18rem;
+        font-family: "Inter", Arial, sans-serif;
+        font-weight: 600;
+        border: 2.5px solid #e53935;
+      }
+      #errorModalOkBtn {
+        background: #e53935;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: 8px 26px;
+        font-size: 1.08rem;
+        font-family: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 18px;
+        box-shadow: 0 2px 8px #e5393530;
+        transition: background 0.18s;
+      }
+      #errorModalOkBtn:hover {
+        background: #b71c1c;
+      }
     </style>
   </head>
   <body>
@@ -442,6 +490,13 @@
       </div>
     </div>
     <div id="errorMsg"></div>
+    <!-- Error Modal Popup -->
+    <div id="errorModal" style="display: none">
+      <div id="errorModalContent">
+        <span id="errorModalMsg"></span>
+        <button id="errorModalOkBtn" style="margin-top: 18px">OK</button>
+      </div>
+    </div>
     <!-- Credit message -->
     <div id="kernel-krew-credit">
       Credit: Kernel Krew!
@@ -783,13 +838,35 @@
         return used / n;
       }
 
-      // Error message display
+      // Error message display (popup modal)
       function showError(msg) {
-        errorMsg.textContent = msg;
+        // Hide inline error
+        errorMsg.textContent = "";
+        // Show modal
+        const modal = document.getElementById("errorModal");
+        const modalMsg = document.getElementById("errorModalMsg");
+        modalMsg.textContent = msg;
+        modal.style.display = "flex";
+        // Trap focus
+        document.body.style.overflow = "hidden";
+        document.getElementById("errorModalOkBtn").focus();
       }
       function clearError() {
         errorMsg.textContent = "";
+        const modal = document.getElementById("errorModal");
+        modal.style.display = "none";
+        document.body.style.overflow = "";
       }
+      // Modal OK button handler
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("errorModalOkBtn").onclick = clearError;
+        // Optional: close modal on Enter key
+        document
+          .getElementById("errorModalOkBtn")
+          .addEventListener("keyup", function (e) {
+            if (e.key === "Enter" || e.key === " ") clearError();
+          });
+      });
 
       // --- Deterministic helpers (move these OUTSIDE runSimulation so they're always defined) ---
       function hashCode(str) {
@@ -1216,6 +1293,13 @@
           d = parseInt(meanInput.value);
           v = parseInt(stddevInput.value);
           n = parseInt(memSizeInput.value);
+          // Validation: d must be less than n
+          if (d >= n) {
+            showError(
+              "Error: Mean request size (d) must be less than memory size (n)."
+            );
+            return;
+          }
           // Always start with first-fit
           strategy = "first-fit";
           meanInput.disabled = true;
